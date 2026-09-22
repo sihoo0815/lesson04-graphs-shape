@@ -42,6 +42,14 @@ def load_data():
         .str.strip()
     )
 
+    # 제작 국가가 비어 있는 경우
+    df["nation"] = (
+        df["nation"]
+        .fillna("미상")
+        .astype(str)
+        .str.strip()
+    )
+
     # 숫자형 데이터 변환
     df["first_scrn"] = pd.to_numeric(
         df["first_scrn"],
@@ -460,7 +468,6 @@ bubble_df = df[
     ]
 ].copy()
 
-# 필요한 값이 없는 행 제거
 bubble_df = bubble_df.dropna(
     subset=[
         "first_scrn",
@@ -469,7 +476,6 @@ bubble_df = bubble_df.dropna(
     ]
 )
 
-# 양수인 영화만 사용
 bubble_df = bubble_df[
     (bubble_df["first_scrn"] > 0)
     & (bubble_df["first_week_audi"] > 0)
@@ -484,6 +490,10 @@ fig_bubble = px.scatter(
     color="genre_first",
     hover_name="movieNm",
     size_max=45,
+    custom_data=[
+        "genre_first",
+        "first_week_audi",
+    ],
     labels={
         "first_scrn": "개봉일 스크린 수",
         "total_audi": "총 관객",
@@ -505,11 +515,10 @@ fig_bubble.update_traces(
         "<b>%{hovertext}</b><br>"
         "장르: %{customdata[0]}<br>"
         "개봉일 스크린 수: %{x:,}개<br>"
-        "첫 주 관객: %{marker.size:,.0f}명<br>"
+        "첫 주 관객: %{customdata[1]:,}명<br>"
         "총 관객: %{y:,}명"
         "<extra></extra>"
     ),
-    customdata=bubble_df[["genre_first"]].values,
 )
 
 fig_bubble.update_layout(
@@ -530,12 +539,90 @@ st.subheader("이 그래프로 알 수 있는 것")
 st.text_area(
     "그래프 6 해석",
     placeholder=(
-        "예: 첫 주 관객이 많은 영화일수록 버블의 크기가 크게 나타나며, "
-        "스크린 수와 총 관객의 관계도 함께 살펴볼 수 있다."
+        "예: 첫 주 관객이 많은 영화일수록 버블의 크기가 크게 나타난다."
     ),
     height=90,
     label_visibility="collapsed",
     key="interpretation_6",
+)
+
+st.divider()
+
+
+# ============================================================
+# 그래프 7. 제작 국가 → 장르 선버스트
+# ============================================================
+st.header("7. 제작 국가에서 장르로 내려가는 구조")
+
+st.caption(
+    "제작 국가에서 장르로 내려가며, 각 칸의 크기는 영화 편수를 나타냅니다."
+)
+
+sunburst_df = df[
+    ["nation", "genre_first"]
+].copy()
+
+# 국가나 장르가 비어 있는 데이터는 '미상'으로 처리
+sunburst_df["nation"] = (
+    sunburst_df["nation"]
+    .replace("", "미상")
+    .fillna("미상")
+)
+
+sunburst_df["genre_first"] = (
+    sunburst_df["genre_first"]
+    .replace("", "미상")
+    .fillna("미상")
+)
+
+# 같은 국가-장르 조합의 영화 편수 계산
+sunburst_counts = (
+    sunburst_df
+    .groupby(
+        ["nation", "genre_first"],
+        as_index=False
+    )
+    .size()
+    .rename(columns={"size": "count"})
+)
+
+fig_sunburst = px.sunburst(
+    sunburst_counts,
+    path=["nation", "genre_first"],
+    values="count",
+    title="제작 국가 → 장르별 영화 편수",
+)
+
+fig_sunburst.update_traces(
+    hovertemplate=(
+        "<b>%{label}</b><br>"
+        "영화 편수: %{value}편"
+        "<extra></extra>"
+    ),
+)
+
+fig_sunburst.update_layout(
+    height=700,
+    margin=dict(t=70, b=20, l=20, r=20),
+)
+
+st.plotly_chart(
+    fig_sunburst,
+    use_container_width=True,
+    config={"displayModeBar": False},
+)
+
+st.subheader("이 그래프로 알 수 있는 것")
+
+st.text_area(
+    "그래프 7 해석",
+    placeholder=(
+        "예: 제작 국가별로 어떤 장르의 영화가 많이 나타나는지 "
+        "비교할 수 있다."
+    ),
+    height=90,
+    label_visibility="collapsed",
+    key="interpretation_7",
 )
 
 st.divider()
@@ -569,6 +656,3 @@ with st.expander("원본 데이터 일부 보기"):
         use_container_width=True,
         hide_index=True,
     )
-
-   
-
