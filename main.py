@@ -48,6 +48,11 @@ def load_data():
         errors="coerce",
     )
 
+    df["first_week_audi"] = pd.to_numeric(
+        df["first_week_audi"],
+        errors="coerce",
+    )
+
     df["total_audi"] = pd.to_numeric(
         df["total_audi"],
         errors="coerce",
@@ -370,8 +375,6 @@ st.caption(
     "영화가 10편 이상인 장르만 골라 총 관객 분포를 비교합니다."
 )
 
-
-# 영화가 10편 이상인 장르 찾기
 genre_movie_counts = (
     df["genre_first"]
     .value_counts()
@@ -381,15 +384,11 @@ eligible_genres = genre_movie_counts[
     genre_movie_counts >= 10
 ].index
 
-
-# 조건에 맞는 영화만 추출
 boxplot_df = df[
     df["genre_first"].isin(eligible_genres)
     & (df["total_audi"] > 0)
 ].copy()
 
-
-# 영화명을 customdata로 넣기 위해 별도 컬럼 사용
 fig_box = px.box(
     boxplot_df,
     x="genre_first",
@@ -404,8 +403,6 @@ fig_box = px.box(
     title="영화가 10편 이상인 장르의 총 관객 분포",
 )
 
-
-# 이상치에 마우스를 올렸을 때 영화명 표시
 fig_box.update_traces(
     hovertemplate=(
         "<b>%{customdata[0]}</b><br>"
@@ -415,7 +412,6 @@ fig_box.update_traces(
     ),
 )
 
-
 fig_box.update_layout(
     height=600,
     showlegend=False,
@@ -424,13 +420,11 @@ fig_box.update_layout(
     margin=dict(t=70, b=50, l=60, r=20),
 )
 
-
 st.plotly_chart(
     fig_box,
     use_container_width=True,
     config={"displayModeBar": False},
 )
-
 
 st.subheader("이 그래프로 알 수 있는 것")
 
@@ -442,6 +436,106 @@ st.text_area(
     height=90,
     label_visibility="collapsed",
     key="interpretation_5",
+)
+
+st.divider()
+
+
+# ============================================================
+# 그래프 6. 첫 주 관객을 크기로 표현한 버블 산점도
+# ============================================================
+st.header("6. 개봉일 스크린 수와 총 관객 — 첫 주 관객 버블")
+
+st.caption(
+    "4번 산점도에 첫 주 관객 수를 버블 크기로 추가했습니다."
+)
+
+bubble_df = df[
+    [
+        "movieNm",
+        "genre_first",
+        "first_scrn",
+        "first_week_audi",
+        "total_audi",
+    ]
+].copy()
+
+# 필요한 값이 없는 행 제거
+bubble_df = bubble_df.dropna(
+    subset=[
+        "first_scrn",
+        "first_week_audi",
+        "total_audi",
+    ]
+)
+
+# 양수인 영화만 사용
+bubble_df = bubble_df[
+    (bubble_df["first_scrn"] > 0)
+    & (bubble_df["first_week_audi"] > 0)
+    & (bubble_df["total_audi"] > 0)
+]
+
+fig_bubble = px.scatter(
+    bubble_df,
+    x="first_scrn",
+    y="total_audi",
+    size="first_week_audi",
+    color="genre_first",
+    hover_name="movieNm",
+    size_max=45,
+    labels={
+        "first_scrn": "개봉일 스크린 수",
+        "total_audi": "총 관객",
+        "first_week_audi": "첫 주 관객",
+        "genre_first": "장르",
+    },
+    title="개봉일 스크린 수 × 총 관객 × 첫 주 관객",
+)
+
+fig_bubble.update_traces(
+    marker=dict(
+        opacity=0.65,
+        line=dict(
+            width=0.5,
+            color="white",
+        ),
+    ),
+    hovertemplate=(
+        "<b>%{hovertext}</b><br>"
+        "장르: %{customdata[0]}<br>"
+        "개봉일 스크린 수: %{x:,}개<br>"
+        "첫 주 관객: %{marker.size:,.0f}명<br>"
+        "총 관객: %{y:,}명"
+        "<extra></extra>"
+    ),
+    customdata=bubble_df[["genre_first"]].values,
+)
+
+fig_bubble.update_layout(
+    height=650,
+    xaxis_title="개봉일 스크린 수",
+    yaxis_title="총 관객",
+    margin=dict(t=70, b=50, l=60, r=20),
+)
+
+st.plotly_chart(
+    fig_bubble,
+    use_container_width=True,
+    config={"displayModeBar": False},
+)
+
+st.subheader("이 그래프로 알 수 있는 것")
+
+st.text_area(
+    "그래프 6 해석",
+    placeholder=(
+        "예: 첫 주 관객이 많은 영화일수록 버블의 크기가 크게 나타나며, "
+        "스크린 수와 총 관객의 관계도 함께 살펴볼 수 있다."
+    ),
+    height=90,
+    label_visibility="collapsed",
+    key="interpretation_6",
 )
 
 st.divider()
@@ -475,3 +569,6 @@ with st.expander("원본 데이터 일부 보기"):
         use_container_width=True,
         hide_index=True,
     )
+
+   
+
