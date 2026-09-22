@@ -296,12 +296,10 @@ scatter_df = df[
     ["movieNm", "genre_first", "first_scrn", "total_audi"]
 ].copy()
 
-# 필요한 값이 없는 행 제거
 scatter_df = scatter_df.dropna(
     subset=["first_scrn", "total_audi"]
 )
 
-# 스크린 수와 관객 수가 0보다 큰 영화만 사용
 scatter_df = scatter_df[
     (scatter_df["first_scrn"] > 0)
     & (scatter_df["total_audi"] > 0)
@@ -358,6 +356,92 @@ st.text_area(
     height=90,
     label_visibility="collapsed",
     key="interpretation_4",
+)
+
+st.divider()
+
+
+# ============================================================
+# 그래프 5. 장르별 총 관객 상자 그림
+# ============================================================
+st.header("5. 장르별 총 관객 분포")
+
+st.caption(
+    "영화가 10편 이상인 장르만 골라 총 관객 분포를 비교합니다."
+)
+
+
+# 영화가 10편 이상인 장르 찾기
+genre_movie_counts = (
+    df["genre_first"]
+    .value_counts()
+)
+
+eligible_genres = genre_movie_counts[
+    genre_movie_counts >= 10
+].index
+
+
+# 조건에 맞는 영화만 추출
+boxplot_df = df[
+    df["genre_first"].isin(eligible_genres)
+    & (df["total_audi"] > 0)
+].copy()
+
+
+# 영화명을 customdata로 넣기 위해 별도 컬럼 사용
+fig_box = px.box(
+    boxplot_df,
+    x="genre_first",
+    y="total_audi",
+    color="genre_first",
+    points="outliers",
+    custom_data=["movieNm"],
+    labels={
+        "genre_first": "장르",
+        "total_audi": "총 관객",
+    },
+    title="영화가 10편 이상인 장르의 총 관객 분포",
+)
+
+
+# 이상치에 마우스를 올렸을 때 영화명 표시
+fig_box.update_traces(
+    hovertemplate=(
+        "<b>%{customdata[0]}</b><br>"
+        "장르: %{x}<br>"
+        "총 관객: %{y:,}명"
+        "<extra></extra>"
+    ),
+)
+
+
+fig_box.update_layout(
+    height=600,
+    showlegend=False,
+    xaxis_title="장르",
+    yaxis_title="총 관객",
+    margin=dict(t=70, b=50, l=60, r=20),
+)
+
+
+st.plotly_chart(
+    fig_box,
+    use_container_width=True,
+    config={"displayModeBar": False},
+)
+
+
+st.subheader("이 그래프로 알 수 있는 것")
+
+st.text_area(
+    "그래프 5 해석",
+    placeholder=(
+        "예: 장르별 총 관객의 중앙값과 분포의 차이를 비교할 수 있다."
+    ),
+    height=90,
+    label_visibility="collapsed",
+    key="interpretation_5",
 )
 
 st.divider()
