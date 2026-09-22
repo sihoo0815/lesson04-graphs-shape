@@ -116,9 +116,6 @@ st.plotly_chart(
 )
 
 
-# -----------------------------
-# 그래프 1 해석
-# -----------------------------
 st.subheader("이 그래프로 알 수 있는 것")
 
 st.text_area(
@@ -128,7 +125,6 @@ st.text_area(
     label_visibility="collapsed",
     key="interpretation_1",
 )
-
 
 st.divider()
 
@@ -142,12 +138,10 @@ st.caption(
     "각 장르 안의 영화 크기는 총 관객 수에 비례합니다."
 )
 
-# 트리맵에 사용할 데이터
 treemap_df = df[
     ["genre_first", "movieNm", "total_audi"]
 ].copy()
 
-# 총 관객이 0인 데이터는 트리맵에서 제외
 treemap_df = treemap_df[
     treemap_df["total_audi"] > 0
 ]
@@ -180,9 +174,6 @@ st.plotly_chart(
 )
 
 
-# -----------------------------
-# 그래프 2 해석
-# -----------------------------
 st.subheader("이 그래프로 알 수 있는 것")
 
 st.text_area(
@@ -193,6 +184,84 @@ st.text_area(
     key="interpretation_2",
 )
 
+st.divider()
+
+
+# ============================================================
+# 그래프 3. 총 관객 히스토그램
+# ============================================================
+st.header("3. 영화별 총 관객 분포")
+
+hist_df = df[
+    df["total_audi"] > 0
+].copy()
+
+fig_hist = px.histogram(
+    hist_df,
+    x="total_audi",
+    nbins=20,
+    title="영화별 총 관객 분포",
+    labels={
+        "total_audi": "총 관객(명)",
+        "count": "영화 편수",
+    },
+)
+
+fig_hist.update_traces(
+    hovertemplate=(
+        "총 관객 구간: %{x}<br>"
+        "영화 편수: %{y}편"
+        "<extra></extra>"
+    ),
+)
+
+fig_hist.update_layout(
+    height=500,
+    xaxis_title="총 관객(명)",
+    yaxis_title="영화 편수",
+    margin=dict(t=70, b=50, l=50, r=20),
+)
+
+st.plotly_chart(
+    fig_hist,
+    use_container_width=True,
+    config={"displayModeBar": False},
+)
+
+
+# -----------------------------
+# 히스토그램에서 가장 많은 구간 찾기
+# -----------------------------
+hist_counts, bin_edges = pd.np.histogram(
+    hist_df["total_audi"],
+    bins=20,
+)
+
+max_bin_index = hist_counts.argmax()
+
+bin_start = bin_edges[max_bin_index]
+bin_end = bin_edges[max_bin_index + 1]
+
+# 가장 관객이 많은 영화 찾기
+max_audience_row = df.loc[
+    df["total_audi"].idxmax()
+]
+
+max_movie_name = max_audience_row["movieNm"]
+max_audience = int(max_audience_row["total_audi"])
+
+
+# -----------------------------
+# 그래프 아래 설명 문구
+# -----------------------------
+st.subheader("이 그래프로 알 수 있는 것")
+
+st.markdown(
+    f"""
+- **대부분의 영화가 몰려 있는 구간:** 약 **{bin_start:,.0f}명 ~ {bin_end:,.0f}명** 구간에 영화가 가장 많이 몰려 있습니다.
+- **가장 관객이 많은 영화:** **{max_movie_name}** — 총 **{max_audience:,}명**입니다.
+"""
+)
 
 st.divider()
 
