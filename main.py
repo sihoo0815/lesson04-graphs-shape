@@ -12,8 +12,10 @@ st.set_page_config(
     layout="wide",
 )
 
-DATA_URL = 
-    "https://raw.githubusercontent.com/happykth/data/main/kobis_movies.csv"
+DATA_URL = (
+    "https://raw.githubusercontent.com/happykth/data/main/"
+    "kobis_movies.csv"
+)
     
 
 
